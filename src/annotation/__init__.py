@@ -1,0 +1,1 @@
+"""Bakta annotation runner."""
