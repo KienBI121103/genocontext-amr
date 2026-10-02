@@ -7,7 +7,7 @@ from pathlib import Path
 
 import yaml
 
-from src.data.inputs import RecordStore, read_manifest, read_phenotypes, read_split
+from src.data.inputs import RecordStore, parsed_cache_dir, read_manifest, read_phenotypes, read_split
 from src.training.pipeline import preflight_records
 
 
@@ -21,7 +21,7 @@ def main() -> None:
     labels = read_phenotypes(config["paths"]["phenotypes"])
     split = read_split(args.split_root, args.antibiotic, labels)
     store = RecordStore(read_manifest(config["paths"]["manifest"]),
-                        Path(config["paths"]["artifacts"]) / "features/parsed_gff",
+                        parsed_cache_dir(config),
                         Path(config["bakta"]["db"]), config["bakta"]["threads"])
     preflight_records(store, split)
     print(f"Validated {len(set(split.train) | set(split.val) | set(split.test))} isolates")

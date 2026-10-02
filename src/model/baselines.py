@@ -21,6 +21,13 @@ def aggregate_genomes(
     )
 
 
+def random_forest(seed: int, n_jobs: int) -> RandomForestClassifier:
+    return RandomForestClassifier(
+        n_estimators=300, class_weight="balanced_subsample", n_jobs=n_jobs,
+        random_state=seed, min_samples_leaf=2,
+    )
+
+
 def fit_baselines(
     train_x: sparse.csr_matrix, train_y: np.ndarray,
     seed: int, n_jobs: int,
@@ -29,10 +36,7 @@ def fit_baselines(
         "logistic_regression": LogisticRegression(
             max_iter=1000, class_weight="balanced", solver="liblinear", random_state=seed,
         ),
-        "random_forest": RandomForestClassifier(
-            n_estimators=300, class_weight="balanced_subsample", n_jobs=n_jobs,
-            random_state=seed, min_samples_leaf=2,
-        ),
+        "random_forest": random_forest(seed, n_jobs),
     }
     for model in models.values():
         model.fit(train_x, train_y)

@@ -81,6 +81,10 @@ def run_group(
     antibiotic: str, seed: int, feature_mode: str, device: torch.device,
 ) -> None:
     """Run all five models on one externally supplied train/val/test split."""
+    if config.get("fusion", {}).get("enabled", False):
+        from src.training.fusion import run_fusion_group
+        run_fusion_group(config, store, labels, split, antibiotic, seed, feature_mode, device)
+        return
     if feature_mode not in {"raw", "masked"}:
         raise ValueError("feature_mode must be raw or masked")
     output = Path(config["paths"]["artifacts"]) / "results" / f"seed{seed}" / antibiotic / feature_mode
@@ -160,6 +164,7 @@ def run_group(
             model = model_type(
                 encoder.category_sizes, config["model"]["hidden_dim"],
                 config["model"]["dropout"],
+                **({"pooling": config["model"].get("pooling", "mean")} if model_type is GenoContextGNN else {}),
             )
             checkpoint = (
                 Path(config["paths"]["artifacts"]) / "models" / f"seed{seed}"
@@ -171,6 +176,7 @@ def run_group(
                 epochs=training["epochs"], patience=training["patience"],
                 batch_size=training["batch_size"], learning_rate=training["learning_rate"],
                 weight_decay=training["weight_decay"],
+                checkpoint_metric=training.get("checkpoint_metric", "f1"),
             )
             probabilities = {
                 part: predict(model, graphs[part], device, training["batch_size"])

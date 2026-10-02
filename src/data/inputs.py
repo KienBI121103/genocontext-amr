@@ -13,6 +13,10 @@ from src.parsing.gff import GeneRecord, parse_gff3
 LOG = logging.getLogger(__name__)
 
 
+def parsed_cache_dir(config: dict) -> Path:
+    return Path(config["paths"].get("parsed_cache", Path(config["paths"]["artifacts"]) / "features/parsed_gff"))
+
+
 @dataclass(frozen=True)
 class Isolate:
     isolate_id: str

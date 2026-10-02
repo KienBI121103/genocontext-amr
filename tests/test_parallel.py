@@ -1,10 +1,11 @@
 from pathlib import Path
 
 import torch
+import pytest
 
 from src.data.inputs import Isolate, RecordStore
 from src.features.gene_features import GeneFeatureEncoder
-from src.training.parallel import FeatureBuilder
+from src.training.parallel import FeatureBuilder, validate_records
 
 
 def test_parallel_feature_builder_matches_serial(tmp_path: Path):
@@ -20,6 +21,10 @@ def test_parallel_feature_builder_matches_serial(tmp_path: Path):
         )
         manifest[sample] = Isolate(sample, gff)
     store = RecordStore(manifest, tmp_path / "cache", tmp_path / "db")
+    assert list(validate_records(store, samples, workers=2)) == list(samples)
+    assert list(validate_records(store, samples, workers=1)) == list(samples)
+    with pytest.raises(ValueError, match="unique"):
+        list(validate_records(store, (samples[0], samples[0]), workers=2))
     encoder = GeneFeatureEncoder(min_category_frequency=1).fit(
         store.get(sample) for sample in samples
     )
@@ -41,3 +46,7 @@ def test_parallel_feature_builder_matches_serial(tmp_path: Path):
         assert torch.equal(serial.x_cat, parallel.x_cat)
         assert torch.equal(serial.edge_index, parallel.edge_index)
         assert torch.equal(serial.y, parallel.y)
+    # A changed invalid source must propagate its error through parallel preflight.
+    manifest[samples[0]].gff3_path.write_text("invalid annotation\n")
+    with pytest.raises(ValueError):
+        list(validate_records(store, samples, workers=2))

@@ -20,18 +20,44 @@ _WORKER_ANTIBIOTIC: str
 _WORKER_NEIGHBOR_K: int
 
 
+def _init_records(store: RecordStore) -> None:
+    global _WORKER_STORE
+    _WORKER_STORE = store
+    torch.set_num_threads(1)
+    torch.set_num_interop_threads(1)
+
+
+def _validate_record(sample: str) -> str:
+    _WORKER_STORE.get(sample)
+    return sample
+
+
+def validate_records(store: RecordStore, samples: tuple[str, ...], workers: int = 1):
+    """Validate every annotation with bounded tasks; return IDs, not large gene lists."""
+    if workers < 1 or len(samples) != len(set(samples)):
+        raise ValueError("Validation requires positive workers and unique isolate IDs")
+    if workers == 1:
+        for sample in samples:
+            store.get(sample)
+            yield sample
+        return
+    window = max(32, workers * 4)
+    with ProcessPoolExecutor(max_workers=workers, mp_context=get_context("spawn"),
+                             initializer=_init_records, initargs=(store,)) as executor:
+        for start in range(0, len(samples), window):
+            yield from executor.map(_validate_record, samples[start:start + window], chunksize=4)
+
+
 def _init_worker(
     store: RecordStore, encoder: GeneFeatureEncoder,
     labels: dict[tuple[str, str], int], antibiotic: str, neighbor_k: int,
 ) -> None:
     global _WORKER_STORE, _WORKER_ENCODER, _WORKER_LABELS, _WORKER_ANTIBIOTIC, _WORKER_NEIGHBOR_K
-    _WORKER_STORE = store
+    _init_records(store)
     _WORKER_ENCODER = encoder
     _WORKER_LABELS = labels
     _WORKER_ANTIBIOTIC = antibiotic
     _WORKER_NEIGHBOR_K = neighbor_k
-    torch.set_num_threads(1)
-    torch.set_num_interop_threads(1)
 
 
 def _vector(sample: str) -> sparse.csr_matrix:
@@ -90,8 +116,9 @@ class FeatureBuilder:
         if self.executor is None:
             return [local(item) for item in items]
         result = []
-        for start in range(0, len(items), 32):
-            result.extend(self.executor.map(worker, items[start:start + 32], chunksize=4))
+        window = max(32, self.workers * 4)
+        for start in range(0, len(items), window):
+            result.extend(self.executor.map(worker, items[start:start + window], chunksize=4))
         return result
 
     def genome_matrix(self, samples: tuple[str, ...]) -> sparse.csr_matrix:

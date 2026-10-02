@@ -16,12 +16,13 @@ from sklearn.metrics import (
 
 
 def _validate(y_true: np.ndarray, probabilities: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    labels = np.asarray(y_true, dtype=int)
+    labels = np.asarray(y_true)
     scores = np.asarray(probabilities, dtype=float)
     if labels.ndim != 1 or scores.ndim != 1 or len(labels) != len(scores) or not len(labels):
         raise ValueError("Labels and probabilities must be nonempty vectors of equal length")
     if not set(labels).issubset({0, 1}):
         raise ValueError("Labels must be binary (0=S, 1=R)")
+    labels = labels.astype(int)
     if not np.isfinite(scores).all() or ((scores < 0) | (scores > 1)).any():
         raise ValueError("Prediction probabilities must be finite and within [0, 1]")
     return labels, scores
