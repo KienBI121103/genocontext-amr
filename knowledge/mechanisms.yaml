@@ -1,0 +1,82 @@
+# GenoContext-KG prior knowledge (version 1, frozen 2026-10-08 before any test evaluation).
+#
+# drugs:      drug -> drug-class tags (drug-query features; also define prior mechanism->drug edges)
+# mechanisms: mechanism -> drug-class tags it is known to affect (prior edges; other edges are learnable with L1)
+# amr_rules:  first matching rule assigns mechanisms to an AMRFinderPlus-tagged CDS (gene/product regex, case-insensitive)
+# targets:    chromosomal loci whose integrity or residues matter; reference = header name in references/kp_targets.faa
+#
+# Sources: CARD Antibiotic Resistance Ontology (https://card.mcmaster.ca); Bush & Bradford, Clin Microbiol Rev 2020
+# (beta-lactamase classes, doi:10.1128/CMR.00047-19); Wong et al., Nat Commun 2019 (OmpK36 L3, 10.1038/s41467-019-11756-y);
+# Tsai et al., AAC 2011 (OmpK35/36 loss, 10.1128/AAC.01275-10); Hooper & Jacoby, Cold Spring Harb Perspect Med 2016
+# (QRDR / PMQR, 10.1101/cshperspect.a025320); Spectrum 2025 (ramR IS disruption, 10.1128/spectrum.03204-24);
+# MgrB is not used: Bakta does not call the 47-aa mgrB ORF as a CDS in these assemblies.
+# Vervoort et al., Future Sci OA 2017 / npj AMR 2024 (nfsA/nfsB/ribE, 10.4155/fsoa-2017-0156, 10.1038/s44259-024-00056-1).
+
+version: 1
+
+drugs:
+  ampicillin_sulbactam: [beta_lactam, penicillin, bl_inhibitor]
+  aztreonam: [beta_lactam, monobactam]
+  cefazolin: [beta_lactam, cephalosporin, ceph_gen1]
+  cefepime: [beta_lactam, cephalosporin, ceph_gen4]
+  cefoxitin: [beta_lactam, cephamycin]
+  ceftazidime: [beta_lactam, cephalosporin, ceph_gen3]
+  ceftriaxone: [beta_lactam, cephalosporin, ceph_gen3]
+  cefuroxime: [beta_lactam, cephalosporin, ceph_gen2]
+  ciprofloxacin: [fluoroquinolone]
+  gentamicin: [aminoglycoside]
+  imipenem: [beta_lactam, carbapenem]
+  levofloxacin: [fluoroquinolone]
+  nitrofurantoin: [nitrofuran]
+  piperacillin_tazobactam: [beta_lactam, penicillin, bl_inhibitor]
+  tetracycline: [tetracycline]
+  tobramycin: [aminoglycoside]
+  trimethoprim_sulfamethoxazole: [folate_pathway]
+
+mechanisms:
+  bla_narrow: [penicillin]
+  esbl: [penicillin, cephalosporin, monobactam]
+  ampc: [penicillin, cephalosporin, cephamycin, monobactam]
+  carbapenemase: [beta_lactam]
+  porin_loss: [carbapenem, cephamycin, cephalosporin, penicillin]
+  efflux_regulation: [tetracycline, fluoroquinolone, nitrofuran]
+  fq_target: [fluoroquinolone]
+  pmqr: [fluoroquinolone]
+  ame: [aminoglycoside]
+  rmtase_16s: [aminoglycoside]
+  folate: [folate_pathway]
+  tetracycline: [tetracycline]
+  nitroreductase_loss: [nitrofuran]
+  other: []   # accessory families, mobile elements, unassigned determinants: no prior edges (all learnable, L1)
+
+amr_rules:
+  - {mechanisms: [carbapenemase], product: "carbapenem-hydrolyzing|metallo-beta-lactamase|carbapenemase"}
+  - {mechanisms: [carbapenemase], gene: "^bla(KPC|NDM|VIM|IMP|GES-5|OXA-48|OXA-181|OXA-232|OXA-244|OXA-162|OXA-204)"}
+  - {mechanisms: [esbl], product: "extended-spectrum"}
+  - {mechanisms: [esbl], gene: "^blaCTX-M"}
+  - {mechanisms: [ampc], product: "class C"}
+  - {mechanisms: [ampc], gene: "^bla(DHA|CMY|ACT|MIR|FOX|ACC|MOX|LAT)"}
+  - {mechanisms: [bla_narrow], product: "beta-lactamase"}
+  - {mechanisms: [bla_narrow], gene: "^bla"}
+  - {mechanisms: [pmqr, ame], product: "AAC\\(6'\\)-Ib-cr"}
+  - {mechanisms: [pmqr], gene: "^(qnr|qepA|oqx)"}
+  - {mechanisms: [rmtase_16s], gene: "^(armA|rmt|npmA)"}
+  - {mechanisms: [ame], gene: "^(aac|aad|aph|ant|str)"}
+  - {mechanisms: [folate], gene: "^(sul|dfr)"}
+  - {mechanisms: [tetracycline], gene: "^tet"}
+  - {mechanisms: [other], gene: ".*"}
+
+targets:
+  GyrA: {mechanisms: [fq_target], residues: {83: S, 87: D}}
+  ParC: {mechanisms: [fq_target], residues: {80: S, 84: E}}
+  OmpK35: {mechanisms: [porin_loss]}
+  OmpK36: {mechanisms: [porin_loss], indels: true}
+  OmpK37: {mechanisms: [porin_loss]}
+  PhoE: {mechanisms: [porin_loss]}
+  RamR: {mechanisms: [efflux_regulation]}
+  AcrR: {mechanisms: [efflux_regulation]}
+  MarR: {mechanisms: [efflux_regulation]}
+  SoxR: {mechanisms: [efflux_regulation]}
+  NfsA: {mechanisms: [nitroreductase_loss]}
+  NfsB: {mechanisms: [nitroreductase_loss]}
+  RibE: {mechanisms: [nitroreductase_loss]}

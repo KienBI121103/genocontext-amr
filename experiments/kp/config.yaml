@@ -1,0 +1,26 @@
+# GenoContext v2 K. pneumoniae experiment. Relative paths resolve against this file's directory.
+paths:
+  labels: /mnt/nas/earth/KienNM/amrgnn_multi/kpneumoniae/phenotype/ast_labels.csv
+  manifest: /mnt/nas/earth/KienNM/amrgnn_multi/kpneumoniae/sample_manifest.csv
+  splits: /mnt/nas/earth/KienNM/genecontext-gnn/Kp_collected/splits_v2
+  profiles: /mnt/nas/earth/KienNM/genecontext-gnn/Kp_collected/v2/profiles
+  artifacts: /mnt/nas/earth/KienNM/genecontext-gnn/Kp_collected/v2
+  knowledge: ../../knowledge/mechanisms.yaml
+  references: ../../knowledge/references/kp_targets.faa
+features:
+  min_prevalence: 10
+  max_families: 2000
+  block_correlation: 0.98
+  colocalization_k: 5
+model:
+  hidden: 64
+  query: 32
+  dropout: 0.2
+training:
+  epochs: 60
+  patience: 8
+  batch_size: 64
+  learning_rate: 0.001
+  ensemble_seeds: 5
+  threads: 8
+  workers: 64
